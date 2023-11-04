@@ -14,8 +14,7 @@ SECRET_KEY = env.str('SECRET_KEY')
 DEBUG = env.bool('DEBUG', default=False)
 ALLOWED_HOSTS = env.str('ALLOWED_HOSTS', default='').split(' ')
 
-
-# region INSTALLED APPS
+# region ------------------------ INSTALLED APPS -----------------------------------
 # base
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -31,18 +30,20 @@ INSTALLED_APPS += [
     'django_filters',
     'corsheaders',
     'djoser',
+    'phonenumber_field',
 ]
 # apps
 INSTALLED_APPS += [
     'api',
     'common',
-    'breaks'
+    'users',
+    'breaks',
 ]
 # after apps
 INSTALLED_APPS += [
     'drf_spectacular',
 ]
-# endregion
+# endregion ------------------------------------------------------------------------
 
 
 MIDDLEWARE = [
@@ -91,8 +92,10 @@ DATABASES = {
     }
 }
 
+AUTH_USER_MODEL = 'users.User'
+AUTHENTICATION_BACKENDS = ('users.backends.AuthBackend',)
 
-# region DJANGO REST FRAMEWORK
+# region --------------------- DJANGO REST FRAMEWORK -------------------------------
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
@@ -110,7 +113,7 @@ REST_FRAMEWORK = {
 
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
-# endregion
+# endregion ------------------------------------------------------------------------
 
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -130,32 +133,31 @@ AUTH_PASSWORD_VALIDATORS = [
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-
-# region LOCALIZATION
+# region ------------------------- LOCALIZATION ------------------------------------
 LANGUAGE_CODE = 'ru-RU'
 TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
-# endregion
+# endregion ------------------------------------------------------------------------
 
 
-# region STATIC AND MEDIA
+# region ----------------------- STATIC AND MEDIA ----------------------------------
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
-# endregion
+# endregion ------------------------------------------------------------------------
 
 
-# region CORS HEADERS
+# region ------------------------- CORS HEADERS ------------------------------------
 CORS_ORIGIN_ALLOW_ALL = True
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = ['*']
 CSRF_COOKIE_SECURE = False
-# endregion
+# endregion ------------------------------------------------------------------------
 
 
-# region DRF SPECTACULAR
+# region ----------------------- DRF SPECTACULAR -----------------------------------
 SPECTACULAR_SETTINGS = {
     'TITLE': 'Call Helper',
     'DESCRIPTION': 'Your project description',
@@ -178,9 +180,9 @@ SPECTACULAR_SETTINGS = {
     'COMPONENT_SPLIT_REQUEST': True,
     'SORT_OPERATIONS': False,
 }
-# endregion
+# endregion ------------------------------------------------------------------------
 
-# region DJOSER
+# region ------------------------------ DJOSER -------------------------------------
 DJOSER = {
     'PASSWORD_RESET_CONFIRM_URL': '#/password/reset/confirm/{uid}/{token}',
     'USERNAME_RESET_CONFIRM_URL': '#/username/reset/confirm/{uid}/{token}',
@@ -213,4 +215,4 @@ SIMPLE_JWT = {
     'SLIDING_TOKEN_LIFETIME': timedelta(minutes=1),
     'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=7),
 }
-# endregion
+# endregion ------------------------------------------------------------------------

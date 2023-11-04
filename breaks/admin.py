@@ -21,11 +21,12 @@ class OrganisationAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'director')
     filter_horizontal = ('employees',)
 
+
 @admin.register(groups.Group)
 class GroupAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'manager', 'min_active', 'replacement_count',)
     list_display_links = ('id', 'name',)
-    search_fields = ("name", )
+    search_fields = ("name",)
 
     def get_queryset(self, request):
         queryset = groups.Group.objects.annotate(
