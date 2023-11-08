@@ -38,6 +38,7 @@ INSTALLED_APPS += [
     'common',
     'users',
     'breaks',
+    'organisations'
 ]
 # after apps
 INSTALLED_APPS += [
@@ -45,6 +46,11 @@ INSTALLED_APPS += [
 ]
 # endregion ------------------------------------------------------------------------
 
+
+# custom user model
+AUTH_USER_MODEL = 'users.User'
+# custom backend
+AUTHENTICATION_BACKENDS = ('users.backends.AuthBackend',)
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -55,6 +61,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'corsheaders.middleware.CorsMiddleware',
+    'crum.CurrentRequestUserMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -92,9 +99,6 @@ DATABASES = {
     }
 }
 
-AUTH_USER_MODEL = 'users.User'
-AUTHENTICATION_BACKENDS = ('users.backends.AuthBackend',)
-
 # region --------------------- DJANGO REST FRAMEWORK -------------------------------
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
@@ -112,6 +116,7 @@ REST_FRAMEWORK = {
     ],
 
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    'DEFAULT_PAGINATION_CLASS': 'common.pagination.BasePagination',
 }
 # endregion ------------------------------------------------------------------------
 

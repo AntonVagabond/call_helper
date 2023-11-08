@@ -8,7 +8,9 @@ from users.views import users
 # router.register(prefix=r'reg', viewset=users.RegistrationView, basename='reg')
 
 urlpatterns = [
-    path('users/reg/', users.RegistrationView.as_view(), name='reg')
+    path('users/reg/', users.RegistrationView.as_view(), name='reg'),
+    path('users/me/', users.MeView.as_view(), name='me'),
+    path('users/change-passwd/', users.ChangePasswordView.as_view(), name='change_passwd'),
 ]
 
 # urlpatterns += path('users/', include(router.urls))
