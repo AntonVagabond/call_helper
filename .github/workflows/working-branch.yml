@@ -19,7 +19,7 @@ jobs:
         script: |
           # Выполняет деплой
           cd ${{ secrets.PATH }}
-          source venv/bin/activate
+          sourse venv/bin/activate
           git pull
           pip install -r requirements.txt
           python manage.py makemigrations
