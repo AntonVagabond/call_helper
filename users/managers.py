@@ -11,6 +11,7 @@ class CustomUserManager(BaseUserManager):
     ):
         if not (email or phone_number or username):
             raise ParseError('Укажите email или телефон')
+
         if email:
             email = self.normalize_email(email)
 
@@ -43,7 +44,7 @@ class CustomUserManager(BaseUserManager):
         )
 
     def create_superuser(
-            self, email=None, phone_number=None, password=None,
+            self, phone_number=None, email=None, password=None,
             username=None, **extra_fields
     ):
         extra_fields.setdefault('is_superuser', True)

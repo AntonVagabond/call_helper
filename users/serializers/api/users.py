@@ -13,7 +13,8 @@ User = get_user_model()
 class RegistrationSerializer(serializers.ModelSerializer):
     email = serializers.EmailField()
     password = serializers.CharField(
-        style={'input_type': 'password'}, write_only=True
+        style={'input_type': 'password'},
+        write_only=True
     )
 
     class Meta:
@@ -26,15 +27,15 @@ class RegistrationSerializer(serializers.ModelSerializer):
             'password',
         )
 
-    def validate_email(self, value):
+    @staticmethod
+    def validate_email(value):
         email = value.lower()
         if User.objects.filter(email=email).exists():
-            raise ParseError(
-                'Пользователь с такой почтой уже зарегистрирован.'
-            )
+            raise ParseError('Пользователь с такой почтой уже зарегистрирован.')
         return email
 
-    def validate_password(self, value):
+    @staticmethod
+    def validate_password(value):
         validate_password(value)
         return value
 
@@ -55,9 +56,7 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
         user = self.instance
         old_password = attrs.pop('old_password')
         if not user.check_password(old_password):
-            raise ParseError(
-                'Проверьте правильность текущего пароля!'
-            )
+            raise ParseError('Проверьте правильность текущего пароля!')
         return attrs
 
     def validate_new_password(self, value):
@@ -72,7 +71,7 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
 
 
 class MeSerializer(serializers.ModelSerializer):
-    profile = ProfileShortSerializer
+    profile = ProfileShortSerializer()
 
     class Meta:
         model = User
@@ -89,7 +88,7 @@ class MeSerializer(serializers.ModelSerializer):
 
 
 class MeUpdateSerializer(serializers.ModelSerializer):
-    profile = ProfileUpdateSerializer
+    profile = ProfileUpdateSerializer()
 
     class Meta:
         model = User
@@ -105,14 +104,13 @@ class MeUpdateSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         # Проверка на наличия профиля
-        profile_data = None
-        if 'profile' in validated_data:
-            profile_data = validated_data.pop('profile')
+        profile_data = validated_data.pop('profile') if 'profile' in validated_data else None
 
         with transaction.atomic():
             instance = super().update(instance, validated_data)
             # Update профиля
-            self._update_profile(instance.profile, profile_data)
+            if profile_data:
+                self._update_profile(instance.profile, profile_data)
 
         return instance
 
@@ -123,3 +121,14 @@ class MeUpdateSerializer(serializers.ModelSerializer):
         )
         profile_serializer.is_valid(raise_exception=True)
         profile_serializer.save()
+
+
+class UserSearchListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = (
+            'id',
+            'username',
+            'email',
+            'full_name',
+        )

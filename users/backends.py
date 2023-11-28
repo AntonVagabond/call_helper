@@ -5,17 +5,19 @@ User = get_user_model()
 
 
 class AuthBackend(object):
-    supports_objects_permission = True
+    supports_object_permissions = True
     supports_anonymous_user = True
-    supports_inactive_users = True
+    supports_inactive_user = True
 
-    def get_user(self, user_id):
+    @staticmethod
+    def get_user(user_id):
         try:
             return User.objects.get(pk=user_id)
         except User.DoesNotExist:
             return None
 
-    def authenticate(self, request, username, password):
+    @staticmethod
+    def authenticate(request, username, password):
         try:
             user = User.objects.get(
                 Q(username=username) |

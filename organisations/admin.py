@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 from breaks.models.replacements import GroupInfo
-from organisations.models import organisations, groups, dicts
+from organisations.models import organisations, groups, dicts, offers
 
 
 # region ----------------------------- INLINES -------------------------------------
@@ -10,9 +10,14 @@ class EmployeeInline(admin.TabularInline):
     fields = ('user', 'position', 'date_joined',)
 
 
+class OfferInline(admin.TabularInline):
+    model = offers.Offer
+    fields = ('org_accept', 'user', 'user_accept')
+
+
 class MemberInline(admin.TabularInline):
     model = groups.Member
-    fields = ('user', 'date_joined',)
+    fields = ('employee', 'date_joined',)
 
 
 class ProfileBreakInline(admin.StackedInline):
@@ -23,6 +28,7 @@ class ProfileBreakInline(admin.StackedInline):
         'break_end',
         'break_max_duration',
     )
+
 
 # endregion ------------------------------------------------------------------------
 
@@ -39,8 +45,8 @@ class PositionAdmin(admin.ModelAdmin):
 @admin.register(organisations.Organisation)
 class OrganisationAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'director')
-    filter_horizontal = ('employees',)
-    inlines = (EmployeeInline,)
+    filter_vertical = ('employees',)
+    inlines = (EmployeeInline, OfferInline,)
     readonly_fields = (
         'created_at', 'created_by', 'updated_at', 'updated_by',
     )
@@ -50,11 +56,21 @@ class OrganisationAdmin(admin.ModelAdmin):
 class GroupAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'manager',)
     list_display_links = ('id', 'name',)
-    search_fields = ("name",)
+    search_fields = ('name',)
     inlines = (
-        MemberInline,
         ProfileBreakInline,
+        MemberInline,
     )
+    readonly_fields = (
+        'created_at', 'created_by', 'updated_at', 'updated_by',
+    )
+
+
+@admin.register(offers.Offer)
+class OfferAdmin(admin.ModelAdmin):
+    list_display = ('id', 'organisation', 'org_accept', 'user', 'user_accept')
+    search_fields = ('organisation__name', 'user__last_name')
+
     readonly_fields = (
         'created_at', 'created_by', 'updated_at', 'updated_by',
     )

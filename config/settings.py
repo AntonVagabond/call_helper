@@ -3,6 +3,11 @@ from datetime import timedelta
 import environ
 import os
 
+import django
+from django.utils.encoding import smart_str
+
+django.utils.encoding.smart_text = smart_str
+
 root = environ.Path(__file__) - 2
 env = environ.Env()
 
@@ -11,8 +16,8 @@ environ.Env.read_env(env.str(root(), '.env'))
 BASE_DIR = root()
 
 SECRET_KEY = env.str('SECRET_KEY')
-DEBUG = env.bool('DEBUG', default=False)
-ALLOWED_HOSTS = env.str('ALLOWED_HOSTS', default='').split(' ')
+DEBUG = env.bool(var='DEBUG', default=False)
+ALLOWED_HOSTS = env.str(var='ALLOWED_HOSTS', default='').split(' ')
 
 # region ------------------------ INSTALLED APPS -----------------------------------
 # base
@@ -26,11 +31,14 @@ INSTALLED_APPS = [
 ]
 # packages
 INSTALLED_APPS += [
+    'auditlog',
     'rest_framework',
     'django_filters',
     'corsheaders',
     'djoser',
     'phonenumber_field',
+    'django_generate_series',
+    'debug_toolbar',
 ]
 # apps
 INSTALLED_APPS += [
@@ -38,8 +46,14 @@ INSTALLED_APPS += [
     'common',
     'users',
     'breaks',
-    'organisations'
+    'organisations',
 ]
+
+# custom user model
+AUTH_USER_MODEL = 'users.User'
+# custom backend
+AUTHENTICATION_BACKENDS = ('users.backends.AuthBackend',)
+
 # after apps
 INSTALLED_APPS += [
     'drf_spectacular',
@@ -47,12 +61,8 @@ INSTALLED_APPS += [
 # endregion ------------------------------------------------------------------------
 
 
-# custom user model
-AUTH_USER_MODEL = 'users.User'
-# custom backend
-AUTHENTICATION_BACKENDS = ('users.backends.AuthBackend',)
-
 MIDDLEWARE = [
+    'debug_toolbar.middleware.DebugToolbarMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -62,6 +72,8 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'crum.CurrentRequestUserMiddleware',
+    'auditlog.middleware.AuditlogMiddleware',
+    # 'request_logging.middleware.LoggingMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -86,7 +98,7 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
         'NAME': env.str(var='PG_DATABASE', default='postgres'),
         'USER': env.str(var='PG_USER', default='postgres'),
         'PASSWORD': env.str(var='PG_PASSWORD', default='postgres'),
@@ -96,7 +108,7 @@ DATABASES = {
     'extra': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-    }
+    },
 }
 
 # region --------------------- DJANGO REST FRAMEWORK -------------------------------
@@ -104,9 +116,9 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
     ),
-    'DEFAULT_AUTHENTICATED_CLASSES': [
-        'rest_framework_simplejwt.authentication.JWTAuthentication',  # ???
-        'rest_framework.authentication.BasicAuthentication'
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework.authentication.BasicAuthentication',
     ],
     'DEFAULT_PARSER_CLASSES': [
         'rest_framework.parsers.JSONParser',
@@ -114,7 +126,7 @@ REST_FRAMEWORK = {
         'rest_framework.parsers.MultiPartParser',
         'rest_framework.parsers.FileUploadParser',
     ],
-
+    'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_PAGINATION_CLASS': 'common.pagination.BasePagination',
 }
@@ -140,7 +152,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # region ------------------------- LOCALIZATION ------------------------------------
 LANGUAGE_CODE = 'ru-RU'
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Europe/Moscow'
 USE_I18N = True
 USE_TZ = True
 # endregion ------------------------------------------------------------------------
@@ -165,25 +177,33 @@ CSRF_COOKIE_SECURE = False
 # region ----------------------- DRF SPECTACULAR -----------------------------------
 SPECTACULAR_SETTINGS = {
     'TITLE': 'Call Helper',
-    'DESCRIPTION': 'Your project description',
+    'DESCRIPTION': 'Call Helper',
     'VERSION': '1.0.0',
 
     'SERVE_PERMISSIONS': [
-        'rest_framework.permissions.IsAuthenticated'
+        'rest_framework.permissions.IsAuthenticated',
     ],
 
     'SERVE_AUTHENTICATION': [
-        'rest_framework.authentication.BasicAuthentication'
+        'rest_framework.authentication.BasicAuthentication',
     ],
 
     'SWAGGER_UI_SETTINGS': {
-        'DeepLinking': True,
-        'DisplayOperationId': True,
-
+        'deepLinking': True,
+        'displayOperationId': True,
+        'syntaxHighlight.active': True,
+        'syntaxHighlight.theme': 'arta',
+        'defaultModelsExpandDepth': -1,
+        'displayRequestDuration': True,
+        'filter': True,
+        'requestSnippetsEnabled': True,
     },
 
     'COMPONENT_SPLIT_REQUEST': True,
     'SORT_OPERATIONS': False,
+
+    'ENABLE_DJANGO_DEPLOY_CHECK': False,
+    # 'DISABLE_ERRORS_AND_WARNINGS': True,
 }
 # endregion ------------------------------------------------------------------------
 
@@ -197,19 +217,19 @@ DJOSER = {
 }
 
 SIMPLE_JWT = {
-    'ACCESS TOKEN LIFETIME': timedelta(days=1),
-    'REFRESH TOKEN LIFETIME': timedelta(days=7),
-    'ROTATE REFRESH TOKENS': True,
-    'BLACKLIST _AFTER_ROTATION': True,
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
     'ALGORITHM': 'HS256',
-    'SIGNING KEY': SECRET_KEY,
-    'VERIFYING KEY': None,
+    'SIGNING_KEY': SECRET_KEY,
+    'VERIFYING_KEY': None,
     'AUDIENCE': None,
     'ISSUER': None,
 
     'AUTH_HEADER_TYPES': ('Bearer',),
     'USER_ID_FIELD': 'id',
-    'USER_ID_CLAIM': 'user _id',
+    'USER_ID_CLAIM': 'user_id',
 
     'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
     'TOKEN_TYPE_CLAIM': 'token_type',
@@ -221,3 +241,77 @@ SIMPLE_JWT = {
     'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=7),
 }
 # endregion ------------------------------------------------------------------------
+
+
+# region ------------------------------ SENTRY -------------------------------------
+if DEBUG:
+    import sentry_sdk
+    from sentry_sdk.integrations.django import DjangoIntegration
+
+    sentry_sdk.init(
+        dsn=env.str(var='SENTRY_DSN', default=''),
+        integrations=[
+            DjangoIntegration(),
+        ],
+        traces_sample_rate=1.0,
+        send_default_pii=True
+    )
+
+    INTERNAL_IPS = [
+        '127.0.0.1',
+    ]
+# endregion ------------------------------------------------------------------------
+
+
+# LOGGING = {
+#     'version': 1,
+#     'disable_existing_loggers': False,
+#     'formatters': {
+#         'verbose': {
+#             'format': '{levelname} {asctime} {module} {message}',
+#             'style': '{',
+#         },
+#         'logstash': {
+#             'format': '%(asctime)s [%(levelname)s] %(name)s: %(message)s',
+#         },
+#         'json': {
+#             '()': 'pythonjsonlogger.jsonlogger.JsonFormatter',
+#             'format': '%(asctime)s %(levelname)s %(message)s',
+#             'json_indent': None,
+#         },
+#     },
+#     'handlers': {
+#         'console': {
+#             'class': 'logging.StreamHandler',
+#             'formatter': 'verbose',
+#         },
+#         'logstash': {
+#             'level': 'INFO',
+#             # 'formatter': 'json',
+#             'class': 'logstash.TCPLogstashHandler',
+#             'host': 'localhost',
+#             'port': 50000,  # Default value: 5959
+#             'version': 1,
+#             'message_type': 'django',
+#             'fqdn': False,  # Fully qualified domain name. Default value: false.
+#             'tags': ['django.request'],  # list of tags. Default: None.
+#         },
+#
+#     },
+#     'loggers': {
+#         'django.request': {
+#             'handlers': ['console', 'logstash'],
+#             'level': 'DEBUG',
+#             'propagate': False,
+#         },
+#         'request_logging': {
+#             'handlers': ['console', 'logstash'],
+#             'level': 'DEBUG',
+#             'propagate': False,
+#         },
+#     },
+#     'root': {
+#         'handlers': ['console'],
+#         'level': 'INFO',
+#     },
+# }

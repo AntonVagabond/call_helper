@@ -1,8 +1,4 @@
-from django.contrib.auth import get_user_model
-
 from common.models.mixins import BaseDictModelMixin
-
-User = get_user_model()
 
 
 class Position(BaseDictModelMixin):
